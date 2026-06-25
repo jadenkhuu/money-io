@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+:root {
+  --app-bg: #2e2e2e;
+  --app-surface: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-app-bg: var(--app-bg);
+  --color-app-surface: var(--app-surface);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}

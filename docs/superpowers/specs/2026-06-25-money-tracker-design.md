@@ -34,7 +34,9 @@ out of the same engine.
 - Hybrid categories (fixed list + create-on-the-fly, persisted).
 - **"I paid for others"** split flow → produces an owed-to-me receivable.
 - **Owed-to-me ledger** + settle (mark paid / partial), with optional free-text names + per-person rollup.
-- **Home**: this-month net (in/out), recent log, category breakdown (one tap deeper), **forecast** (month-end pace projection).
+- **Home**: calm glance — this-month net (in/out), **forecast** (month-end pace projection), owed pill, short recent-activity preview. No charts.
+- **Activity**: full transaction history (search/filter) **plus analytics** — income vs spending over time, category breakdown, month-over-month.
+- **Navigation**: bottom tabs `[ Home | Activity | + | Owed | More ]`; center `+` opens the entry sheet over any tab.
 - PWA-installable, single responsive column (mobile-shaped, centered on desktop with soft tinted/gradient sides).
 
 ### Phase 2 (fast-follow)
@@ -148,6 +150,22 @@ All money stored as `numeric(12,2)` (exact; no float drift). All tables carry
 
 ## 5. Key flows (reference)
 
+### Navigation skeleton
+Installed PWAs (especially iOS) have no browser back/forward chrome, so top-level
+movement must not depend on browser back. The app uses a persistent bottom tab bar,
+each tab a real route:
+
+| Tab | Job |
+|---|---|
+| **Home** | Calm glance: month net, forecast pace, owed pill, short recent preview. No charts. |
+| **Activity** | Full transaction history (search/filter) + analytics: income vs spend over time, category breakdown, month-over-month. |
+| **Owed** | Outstanding IOUs + settle. |
+| **More** | Categories, account, archive, settings. |
+
+The center **`+`** opens the entry sheet over the current tab (preserves context).
+Sub-views — settle one IOU, transaction detail/edit — are overlay **sheets**, not
+routes, so they never rely on back navigation.
+
 ### Manual entry (primary, ≤3 taps)
 `Tap ➕ → type amount → tap category → Save` → optimistic insert + "Added ✓ / Undo"
 toast → Home. Date defaults today; note/date/split optional. Category chips show a
@@ -178,8 +196,8 @@ spending and net stats are unchanged.
   `projected_net = income_so_far − projected_spend`;
   rendered as a pace bar + "On pace: +$X by <month end>".
 - **Owed-to-you** pill (always visible — signature feature isn't buried).
-- **Recent** log; split rows badged 👥; tap row → edit/delete.
-- Category breakdown (pie/bars) lives one tap deeper to keep Home calm.
+- **Recent** preview (a few rows); "see all" → Activity. Tap a row → edit/delete sheet.
+- The full log + category breakdown live on **Activity**, not Home — keeps Home calm.
 
 ### Screenshot import (Phase 2)
 Share screenshot → Claude parses rows (amount, merchant, date, guessed category
@@ -193,15 +211,15 @@ identical shape to manual.
 
 | Concern | Choice | Why |
 |---|---|---|
-| UI | React + TypeScript + Vite | fast, modular components |
+| UI | Next.js (App Router) + React + TypeScript | familiar to owner; built-in server route hosts Phase 2 Claude call |
 | Styling | Tailwind CSS | rapid, consistent, themeable design tokens |
 | Data/auth | Supabase (Postgres + Auth + RLS) | your pick; gives auth/multi-user nearly free |
 | Client data layer | TanStack Query | caching + optimistic add/undo for snappy UX |
 | Routing | React Router | Home / Add sheet / More |
-| App shell | PWA (vite-plugin-pwa) | "Add to Home Screen", fullscreen, offline *viewing* |
+| App shell | PWA (web manifest + service worker) | "Add to Home Screen", fullscreen, offline *viewing* |
 | Layout | single column, max-width ~420–480px, centered | one UI for mobile + desktop; soft tint/gradient sides on desktop |
 | Hosting | Vercel or Netlify | trivial deploy of static SPA + Supabase |
-| Phase 2 AI | Anthropic API via a secret server function (e.g. Supabase Edge Function) | parse screenshots; key must stay server-side |
+| Phase 2 AI | Anthropic API via a Next.js Route Handler / Server Action | parse screenshots; key must stay server-side |
 
 > **Phase 2 note / open item:** "using my Claude account" — a public web app can't
 > call a Claude.ai *subscription* directly. Screenshot parsing needs the
