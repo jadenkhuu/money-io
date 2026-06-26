@@ -71,7 +71,7 @@ export function CoinAscii() {
       ref={preRef}
       aria-hidden="true"
       className="font-mono select-none whitespace-pre"
-      style={{ fontSize: "clamp(5px, 2.2cqw, 16px)", lineHeight: 1.2 }}
+      style={{ fontSize: "clamp(5px, 1.7cqw, 16px)", lineHeight: 1.2, color: "#d4a017" }}
     >
       {data ? data.frames[0] : ""}
     </pre>

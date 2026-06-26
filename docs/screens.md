@@ -105,6 +105,24 @@ everywhere) + **character-based data viz** (bar meters like `███░░░`
 like `▁▂▅▇`) + **ambient animated ASCII art** as a signature on Home. Monospace /
 tabular numerals for all money. No gradients/shadows/vibrant color.
 
+### Type system — balanced dual register
+
+Two type registers with one rule; the contrast between them *is* the identity.
+
+- **Sans (clean register)** — structural typography: screen titles, labels,
+  settings rows, prose, buttons. Minimal, sentence case, generous spacing.
+- **Mono (ASCII register)** — everything quantitative/graphic: money amounts
+  (with `tabular-nums` so columns align), dates, ASCII bar meters & sparklines,
+  the coin, character dividers, the keypad.
+
+Rule of thumb: **if it's a number or a chart → mono; if it's a word you read →
+sans.** Reserving mono for data keeps the ASCII meaningful, not decorative.
+
+Faces currently loaded (layout.tsx): Geist Sans (`--font-geist-sans`, default
+body) + Geist Mono (`--font-geist-mono`, `font-mono`). Money/data spans:
+`font-mono tabular-nums`. (Typeface choice is still open to revisit — the mono is
+the signature face and can be swapped for something more characterful later.)
+
 Per surface:
 - **Home** — ambient animated ASCII hero; core numbers (net especially) stay
   always-visible; clicking art regions reveals *more detail*, never gates the basics.

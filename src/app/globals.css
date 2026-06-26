@@ -4,12 +4,14 @@
   --app-bg: #2e2e2e;
   --app-surface: #ffffff;
   --foreground: #171717;
+  --app-border: #e5e5e5; /* hairline grey for separating surfaces */
 }
 
 @theme inline {
   --color-app-bg: var(--app-bg);
   --color-app-surface: var(--app-surface);
   --color-foreground: var(--foreground);
+  --color-app-border: var(--app-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
