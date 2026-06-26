@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Transaction } from "@/lib/data";
 import { CATEGORIES, entryLabel, spendingByCategory, summarize } from "@/lib/data";
 import { amount, signed } from "@/lib/format";
+import { deleteTransaction } from "../actions/transactions";
+import { EntrySheet } from "../entry-form";
 import { Bar } from "../bar";
 
 // Activity = a pinned summary over a scrolling transaction log. The summary and
@@ -71,6 +74,7 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
   const [draftDate, setDraftDate] = useState<DateFilter>({ kind: "1mo" });
   const [menu, setMenu] = useState<Menu>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [editingTxn, setEditingTxn] = useState<Transaction | null>(null);
 
   // "now" is anchored to the latest entry so the relative presets stay
   // meaningful for the mock data regardless of the wall clock.
@@ -351,7 +355,7 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
                 </div>
                 <ul>
                   {items.map((t) => (
-                    <TransactionRow key={t.id} t={t} />
+                    <TransactionRow key={t.id} t={t} onEdit={setEditingTxn} />
                   ))}
                 </ul>
               </section>
@@ -359,6 +363,14 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
           </div>
         )}
       </div>
+
+      {/* Edit reuses the entry sheet, pre-filled from the transaction. */}
+      {editingTxn && (
+        <EntrySheet
+          editing={editingTxn}
+          onClose={() => setEditingTxn(null)}
+        />
+      )}
     </div>
   );
 }
@@ -403,9 +415,39 @@ function CollapseToggle({
 // A transaction in the log. Carries an unobtrusive "note" toggle that only
 // appears when the entry has a note, revealing it inline. The row itself stays
 // un-tappable so it's free for the future detail/edit sheet (see screens.md).
-function TransactionRow({ t }: { t: Transaction }) {
-  const [open, setOpen] = useState(false);
+function TransactionRow({
+  t,
+  onEdit,
+}: {
+  t: Transaction;
+  onEdit: (t: Transaction) => void;
+}) {
+  const router = useRouter();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false); // note expanded
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const hasNote = t.note.trim().length > 0;
+
+  // Close the options menu on an outside tap.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDown(e: PointerEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+        setConfirming(false);
+      }
+    }
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [menuOpen]);
+
+  async function remove() {
+    setDeleting(true);
+    await deleteTransaction(t.id);
+    router.refresh();
+  }
 
   return (
     <li className="bg-[#f0f0f0] px-5 py-3">
@@ -450,20 +492,116 @@ function TransactionRow({ t }: { t: Transaction }) {
             )}
           </div>
         </div>
-        <span
-          className={`shrink-0 font-mono text-sm tabular-nums ${
-            t.amount >= 0 ? "text-money-in" : "text-money-out"
-          }`}
-        >
-          {signed(t.amount)}
-        </span>
+
+        <div className="flex shrink-0 items-center gap-2.5">
+          <span
+            className={`font-mono text-sm tabular-nums ${
+              t.amount >= 0 ? "text-money-in" : "text-money-out"
+            }`}
+          >
+            {signed(t.amount)}
+          </span>
+
+          <div ref={menuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen((o) => !o);
+                setConfirming(false);
+              }}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-label="Transaction options"
+              className="-mr-1 flex h-7 w-6 items-center justify-center text-foreground/35 hover:text-foreground/70"
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <circle cx="8" cy="3" r="1.4" />
+                <circle cx="8" cy="8" r="1.4" />
+                <circle cx="8" cy="13" r="1.4" />
+              </svg>
+            </button>
+
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-30 mt-1 w-36 border border-foreground/15 bg-app-surface"
+              >
+                {confirming ? (
+                  <div className="px-3 py-2">
+                    <p className="text-xs text-foreground/70">
+                      Delete this entry?
+                    </p>
+                    <div className="mt-2 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setConfirming(false)}
+                        className="text-xs text-foreground/45 hover:text-foreground/70"
+                      >
+                        cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={remove}
+                        disabled={deleting}
+                        className="text-xs font-medium text-money-out disabled:opacity-50"
+                      >
+                        {deleting ? "…" : "delete"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <MenuItem onClick={() => setMenuOpen(false)}>
+                      View more
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onEdit(t);
+                      }}
+                    >
+                      Edit
+                    </MenuItem>
+                    <MenuItem danger onClick={() => setConfirming(true)}>
+                      Delete
+                    </MenuItem>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
       {hasNote && open && (
         <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-foreground/55">
           {t.note}
         </p>
       )}
     </li>
+  );
+}
+
+function MenuItem({
+  children,
+  onClick,
+  danger,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      role="menuitem"
+      type="button"
+      onClick={onClick}
+      className={`block w-full px-3 py-2 text-left text-sm hover:bg-foreground/[0.04] ${
+        danger ? "text-money-out" : "text-foreground/80"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 

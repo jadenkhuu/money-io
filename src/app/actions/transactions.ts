@@ -26,3 +26,39 @@ export async function createTransaction(input: NewEntry): Promise<void> {
 
   revalidatePath("/", "layout");
 }
+
+// Edit an existing entry. RLS limits the update to the owning user.
+export async function updateTransaction(
+  id: string,
+  input: NewEntry
+): Promise<void> {
+  const supabase = createClient(await cookies());
+
+  const { error } = await supabase
+    .from("transactions")
+    .update({
+      amount: input.amount,
+      title: input.title?.trim() || "",
+      note: input.note?.trim() || "",
+      category: input.category?.trim() || "",
+      ...(input.date ? { date: input.date } : {}),
+      split_owed: input.split ? input.split.owed : null,
+      split_settled: input.split?.settled ?? false,
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/", "layout");
+}
+
+// Delete an entry. RLS limits the delete to the owning user.
+export async function deleteTransaction(id: string): Promise<void> {
+  const supabase = createClient(await cookies());
+
+  const { error } = await supabase.from("transactions").delete().eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/", "layout");
+}

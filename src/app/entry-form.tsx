@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES } from "@/lib/data";
-import { createTransaction } from "./actions/transactions";
+import { CATEGORIES, type Transaction } from "@/lib/data";
+import { createTransaction, updateTransaction } from "./actions/transactions";
 import { amount as fmt } from "@/lib/format";
 
 // The `+` entry sheet. Slides up over the current tab; the tab stays mounted
@@ -22,16 +22,32 @@ type Direction = "expense" | "income";
 
 const UNCATEGORISED = "Uncategorised";
 
-export function EntrySheet({ onClose }: { onClose: () => void }) {
+export function EntrySheet({
+  onClose,
+  editing,
+}: {
+  onClose: () => void;
+  editing?: Transaction;
+}) {
   const router = useRouter();
 
-  const [direction, setDirection] = useState<Direction>("expense");
-  const [paid, setPaid] = useState(""); // raw keypad string, e.g. "120.50"
-  const [category, setCategory] = useState(""); // "" = uncategorised
-  const [note, setNote] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [splitOpen, setSplitOpen] = useState(false);
-  const [spent, setSpent] = useState(""); // what you actually spent of `paid`
+  // When editing, rebuild the form inputs from the stored row. The stored
+  // `amount` is the real share (negative for expenses); for a split, the keypad
+  // "paid" = share + owed-back, and "spent" = the share.
+  const shareAbs = editing ? Math.abs(editing.amount) : 0;
+  const owedBack = editing?.split?.owed ?? 0;
+
+  const [direction, setDirection] = useState<Direction>(
+    editing ? (editing.amount >= 0 ? "income" : "expense") : "expense"
+  );
+  const [paid, setPaid] = useState(editing ? rawAmount(shareAbs + owedBack) : "");
+  const [category, setCategory] = useState(editing?.category ?? ""); // "" = uncategorised
+  const [note, setNote] = useState(editing?.note ?? "");
+  const [date, setDate] = useState(
+    editing?.date ?? new Date().toISOString().slice(0, 10)
+  );
+  const [splitOpen, setSplitOpen] = useState(Boolean(editing?.split));
+  const [spent, setSpent] = useState(editing?.split ? rawAmount(shareAbs) : "");
   const [saving, setSaving] = useState(false);
 
   const paidNum = parseAmount(paid);
@@ -45,13 +61,17 @@ export function EntrySheet({ onClose }: { onClose: () => void }) {
   async function save() {
     if (!canSave) return;
     setSaving(true);
-    await createTransaction({
+    const payload = {
       amount: direction === "income" ? share : -share,
       category: category || undefined,
       note: note || undefined,
       date,
-      split: usingSplit ? { owed: owedToYou, settled: false } : undefined,
-    });
+      split: usingSplit
+        ? { owed: owedToYou, settled: editing?.split?.settled ?? false }
+        : undefined,
+    };
+    if (editing) await updateTransaction(editing.id, payload);
+    else await createTransaction(payload);
     router.refresh();
     onClose();
   }
@@ -91,13 +111,15 @@ export function EntrySheet({ onClose }: { onClose: () => void }) {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="New entry"
+          aria-label={editing ? "Edit entry" : "New entry"}
           className="max-h-[92dvh] overflow-y-auto scrollbar-none border-t border-foreground/10 bg-app-surface px-5 pt-4"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
         >
           {/* header */}
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-medium">New entry</h2>
+            <h2 className="text-base font-medium">
+              {editing ? "Edit entry" : "New entry"}
+            </h2>
             <button
               type="button"
               onClick={onClose}
@@ -513,6 +535,11 @@ function parseAmount(raw: string): number {
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+// Number → keypad raw string (e.g. 20.5 -> "20.5"), for seeding the edit form.
+function rawAmount(n: number): string {
+  return n > 0 ? String(round2(n)) : "";
 }
 
 // Grouped display of the in-progress keypad value, preserving a trailing dot or
