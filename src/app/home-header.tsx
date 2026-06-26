@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 // renders client-side (set on mount, updated each minute) to avoid a stale
 // server timestamp and hydration mismatch. The `+` is the affordance for adding
 // widgets — non-functional for now; a handler drops in when that flow exists.
-export function HomeHeader({ name }: { name: string }) {
+export function HomeHeader() {
   const [stamp, setStamp] = useState("");
 
   useEffect(() => {
@@ -30,14 +30,9 @@ export function HomeHeader({ name }: { name: string }) {
 
   return (
     <div className="mt-8 -mx-5 flex items-center justify-between border-y border-app-border px-5 py-3">
-      <p className="text-sm">
-        Welcome back, {name}
-        {stamp && (
-          <span className="ml-1.5 font-mono text-xs text-foreground/55">
-            · {stamp}
-          </span>
-        )}
-      </p>
+      {stamp && (
+        <span className="font-mono text-xs text-foreground/45">{stamp}</span>
+      )}
       <button
         type="button"
         aria-label="Manage widgets"

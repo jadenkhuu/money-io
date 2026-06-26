@@ -17,12 +17,13 @@ export default async function Home() {
   return (
     <main className="px-5 py-6">
       <h1 className="text-sm font-medium tracking-tight">money-io</h1>
+      <p className="mt-1 text-xs text-foreground/50">Welcome back, {user.name}</p>
 
       <div className="mt-6 flex justify-center">
         <CoinAscii />
       </div>
 
-      <HomeHeader name={user.name} />
+      <HomeHeader />
 
       <div className="-mx-5 mt-3 divide-y divide-app-border">
         <Widget title="This month">

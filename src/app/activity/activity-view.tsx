@@ -95,8 +95,10 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
     });
   }, [transactions, dateFilter, type, cats, now]);
 
-  const summary = useMemo(() => summarize(filtered), [filtered]);
-  const breakdown = useMemo(() => spendingByCategory(filtered), [filtered]);
+  // Summary and breakdown always reflect all transactions — filters only affect
+  // the log below, not the overview at the top.
+  const summary = useMemo(() => summarize(transactions), [transactions]);
+  const breakdown = useMemo(() => spendingByCategory(transactions), [transactions]);
   const peak = Math.max(summary.income, summary.expense) || 1;
 
   // Group the filtered log by day (input is already most-recent first).
@@ -169,7 +171,7 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
             <div className={`mt-3 font-mono text-3xl tabular-nums tracking-tight ${summary.net >= 0 ? "text-money-in" : "text-money-out"}`}>
               {signed(summary.net)}
             </div>
-            <div className="mt-0.5 text-xs text-foreground/45">{dateLabel} · net</div>
+            <div className="mt-0.5 text-xs text-foreground/45">net</div>
 
             <div className="mt-4 space-y-1">
               <SplitRow label="in" value={summary.income} ratio={summary.income / peak} />
@@ -288,6 +290,7 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
                   key={t.key}
                   label={t.label}
                   selected={type === t.key}
+                  align="right"
                   onClick={() => {
                     setType(t.key);
                     setMenu(null);
@@ -425,21 +428,23 @@ function OptionRow({
   label,
   selected,
   onClick,
+  align = "left",
 }: {
   label: string;
   selected: boolean;
   onClick: () => void;
+  align?: "left" | "right";
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm ${
-        selected ? "text-foreground" : "text-foreground/60"
-      }`}
+      className={`flex w-full items-center px-3 py-2 text-sm ${
+        align === "right" ? "justify-end" : "justify-between"
+      } ${selected ? "bg-foreground/75 text-app-surface" : "text-foreground/60"}`}
     >
-      {label}
-      {selected && (
+      {align === "left" && label}
+      {align === "left" && selected && (
         <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path
             d="M2 6.5l2.5 2.5L10 3"
@@ -450,6 +455,7 @@ function OptionRow({
           />
         </svg>
       )}
+      {align === "right" && label}
     </button>
   );
 }
@@ -508,7 +514,7 @@ function CategoryMenu({
               onClick={() => onToggle(c)}
               className={`rounded-full border px-2.5 py-1 text-xs ${
                 on
-                  ? "border-foreground bg-foreground text-app-surface"
+                  ? "border-foreground/75 bg-foreground/75 text-app-surface"
                   : "border-app-border text-foreground/60"
               }`}
             >
@@ -557,7 +563,7 @@ function MonthPicker({
               onClick={() => onPick(key)}
               className={`border py-1.5 text-sm ${
                 on
-                  ? "border-foreground text-foreground"
+                  ? "border-foreground/75 bg-foreground/75 text-app-surface"
                   : "border-transparent text-foreground/60"
               }`}
             >
