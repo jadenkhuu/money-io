@@ -19,7 +19,6 @@
 html,
 body {
   height: 100%;
-  overscroll-behavior: none;
 }
 
 /* Centered app column. On mobile (≤ 499px) it fills 100% of the viewport —
@@ -42,4 +41,12 @@ body {
   background: var(--app-bg);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

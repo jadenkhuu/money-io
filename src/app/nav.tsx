@@ -27,7 +27,7 @@ export function AppNav() {
   return (
     <>
       <nav
-        className="sticky bottom-0 z-40 grid grid-cols-5 border-t border-foreground/10 bg-app-surface"
+        className="z-40 grid grid-cols-5 border-t border-foreground/10 bg-app-surface"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <TabLink {...TABS[0]} active={isActive(pathname, TABS[0].href)} />

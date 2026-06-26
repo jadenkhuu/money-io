@@ -42,9 +42,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-dvh bg-app-bg flex justify-center items-start">
-        <div className="app-column @container flex min-h-dvh flex-col bg-app-surface">
-          <div className="flex-1">{children}</div>
+      <body className="h-dvh bg-app-bg flex justify-center items-start overflow-hidden">
+        <div className="app-column @container flex h-dvh flex-col bg-app-surface">
+          <div className="flex-1 overflow-y-auto scrollbar-none">{children}</div>
           <AppNav />
         </div>
         <ServiceWorkerRegister />
