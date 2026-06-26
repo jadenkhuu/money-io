@@ -8,9 +8,3 @@ export function amount(n: number): string {
 export function signed(n: number): string {
   return `${n < 0 ? "−" : "+"}${amount(n)}`;
 }
-
-// Filled/empty block bar. ratio is clamped to 0..1.
-export function bar(ratio: number, width = 16): string {
-  const filled = Math.round(Math.min(1, Math.max(0, ratio)) * width);
-  return "█".repeat(filled) + "░".repeat(width - filled);
-}

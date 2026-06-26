@@ -124,7 +124,7 @@ function Field({
       <input
         id={id}
         name={id}
-        className="w-full border border-app-border bg-app-surface px-3 py-2.5 font-mono text-sm tracking-tight outline-none transition-colors placeholder:text-foreground/30 focus:border-foreground/40"
+        className="w-full border border-app-border bg-app-surface px-3 py-2.5 font-mono text-base tracking-tight outline-none transition-colors placeholder:text-foreground/30 focus:border-foreground/40"
         {...props}
       />
     </div>

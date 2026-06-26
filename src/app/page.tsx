@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { CoinAscii } from "./coin-ascii";
 import { HomeHeader } from "./home-header";
 import { getMonthSummary, getRecentTransactions, getTopCategories, getUser } from "@/lib/data";
-import { amount, bar, signed } from "@/lib/format";
+import { amount, signed } from "@/lib/format";
+import { Bar } from "./bar";
 
 // Money is shown in the mono / ASCII register with tabular figures so columns
 // align. Words (titles, descriptions) stay in the sans / clean register.
@@ -30,9 +31,9 @@ export default async function Home() {
           <div className={`font-mono text-3xl tabular-nums tracking-tight ${month.net >= 0 ? "text-money-in" : "text-money-out"}`}>
             {signed(month.net)}
           </div>
-          <div className="mt-3 font-mono text-sm text-foreground/70">
-            {bar(spendRatio)}
-            <span className="ml-2 text-foreground/45">
+          <div className="mt-3 flex items-center gap-2 font-mono text-sm text-foreground/70">
+            <Bar ratio={spendRatio} className="flex-1" />
+            <span className="shrink-0 text-foreground/45">
               {Math.round(spendRatio * 100)}%
             </span>
           </div>
@@ -52,9 +53,10 @@ export default async function Home() {
                     {amount(c.amount)}
                   </span>
                 </div>
-                <div className="mt-1 font-mono text-xs text-foreground/40">
-                  {bar(c.amount / month.expense)}
-                </div>
+                <Bar
+                  ratio={c.amount / month.expense}
+                  className="mt-1 text-xs text-foreground/40"
+                />
               </li>
             ))}
           </ul>
