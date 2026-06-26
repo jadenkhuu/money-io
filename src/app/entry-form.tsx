@@ -121,20 +121,20 @@ export function EntrySheet({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* amount */}
-          <div className="mt-5 flex flex-col items-center">
-            <div className={`font-mono text-5xl tabular-nums tracking-tight ${tone}`}>
+          <div className="mt-4 flex flex-col items-center">
+            <div className={`font-mono text-4xl tabular-nums tracking-tight ${tone}`}>
               {direction === "income" ? "+" : "−"}
               {displayAmount(paid)}
             </div>
             {usingSplit && (
-              <div className="mt-2 font-mono text-xs tabular-nums text-foreground/50">
+              <div className="mt-1 font-mono text-xs tabular-nums text-foreground/50">
                 you paid {fmt(paidNum)} · owed to you {fmt(owedToYou)}
               </div>
             )}
           </div>
 
           {/* direction toggle */}
-          <div className="mt-4 grid grid-cols-2 gap-1 bg-app-raised p-1 text-sm">
+          <div className="mt-3 grid grid-cols-2 gap-1 bg-app-raised p-1 text-sm">
             <Toggle
               on={direction === "expense"}
               onClick={() => setDirection("expense")}
@@ -152,42 +152,47 @@ export function EntrySheet({ onClose }: { onClose: () => void }) {
             </Toggle>
           </div>
 
-          {/* category + note + date */}
-          <div className="mt-4 border border-app-border">
-            <CategoryRow value={category} onChange={setCategory} />
-            <Row label="Note" border>
+          {/* fields — one connected block, no gaps. Category + Date sit side by
+              side to save height. The split stays always-rendered (fixed height
+              across income/expense + checked/unchecked) and inert for income. */}
+          <div className="mt-3 border border-app-border">
+            <div className="flex">
+              <CategoryRow value={category} onChange={setCategory} />
+              <label className="flex min-w-0 flex-1 flex-col gap-0.5 border-l border-app-border px-3 py-2">
+                <span className="text-[10px] uppercase tracking-wide text-foreground/40">
+                  Date
+                </span>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full min-w-0 bg-transparent font-mono text-base tabular-nums outline-none"
+                />
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-app-border px-3 py-2">
+              <span className="shrink-0 text-sm text-foreground/70">Note</span>
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="optional"
                 className="w-full bg-transparent text-right text-base outline-none placeholder:text-foreground/30"
               />
-            </Row>
-            <Row label="Date" border>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="bg-transparent text-right font-mono text-base tabular-nums outline-none"
-              />
-            </Row>
-          </div>
+            </div>
 
-          {/* split. Always rendered — and rows always present — so the form is
-              the same height for income/expense and checked/unchecked. The
-              checkbox activates it; income makes the whole block inert. */}
-          <div
-            className={`mt-3 border border-app-border ${
-              direction === "expense" ? "" : "pointer-events-none opacity-40"
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => setSplitOpen((s) => !s)}
-              aria-pressed={splitOpen}
-              disabled={direction !== "expense"}
-              className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm"
+            <div
+              className={`bg-app-raised ${
+                direction === "expense" ? "" : "pointer-events-none opacity-40"
+              }`}
             >
+              <button
+                type="button"
+                onClick={() => setSplitOpen((s) => !s)}
+                aria-pressed={splitOpen}
+                disabled={direction !== "expense"}
+                className="flex w-full items-center gap-2.5 border-t border-app-border px-3 py-2 text-left text-sm"
+              >
                 <span
                   className={`flex h-4 w-4 items-center justify-center border text-[10px] leading-none ${
                     splitOpen
@@ -201,12 +206,8 @@ export function EntrySheet({ onClose }: { onClose: () => void }) {
                   I paid for others
                 </span>
               </button>
-              <div
-                className={`transition-opacity ${
-                  splitOpen ? "" : "opacity-40"
-                }`}
-              >
-                <div className="flex items-center justify-between border-t border-app-border px-3 py-2.5">
+              <div className={`transition-opacity ${splitOpen ? "" : "opacity-40"}`}>
+                <div className="flex items-center justify-between border-t border-app-border px-3 py-2">
                   <span className="text-sm text-foreground/70">What I spent</span>
                   <input
                     inputMode="decimal"
@@ -219,7 +220,7 @@ export function EntrySheet({ onClose }: { onClose: () => void }) {
                     className="w-24 bg-transparent text-right font-mono text-base tabular-nums outline-none placeholder:text-foreground/30"
                   />
                 </div>
-                <div className="flex items-center justify-between border-t border-app-border px-3 py-2.5">
+                <div className="flex items-center justify-between border-t border-app-border px-3 py-2">
                   <span className="text-sm text-foreground/70">Owed to you</span>
                   <span className="font-mono text-base tabular-nums text-money-in">
                     {fmt(splitOpen ? owedToYou : 0)}
@@ -227,15 +228,17 @@ export function EntrySheet({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
             </div>
+          </div>
+
           {/* keypad */}
-          <div className="mt-4 grid grid-cols-3 gap-1">
+          <div className="mt-3 grid grid-cols-3 gap-1">
             {["7", "8", "9", "4", "5", "6", "1", "2", "3", ".", "0", "back"].map(
               (k) => (
                 <button
                   key={k}
                   type="button"
                   onClick={() => setPaid(press(paid, k))}
-                  className="bg-app-raised py-3 font-mono text-xl tabular-nums text-foreground active:bg-foreground/10"
+                  className="bg-app-raised py-2.5 font-mono text-xl tabular-nums text-foreground active:bg-foreground/10"
                   aria-label={k === "back" ? "Delete" : k}
                 >
                   {k === "back" ? "⌫" : k}
@@ -249,7 +252,7 @@ export function EntrySheet({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={save}
             disabled={!canSave}
-            className="mt-4 w-full bg-foreground py-3 text-sm font-medium text-app-surface transition-opacity disabled:opacity-30"
+            className="mt-3 w-full bg-foreground py-3 text-sm font-medium text-app-surface transition-opacity disabled:opacity-30"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -278,27 +281,6 @@ function Toggle({
     >
       {children}
     </button>
-  );
-}
-
-function Row({
-  label,
-  border,
-  children,
-}: {
-  label: string;
-  border?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className={`flex items-center justify-between gap-4 bg-app-surface px-3 py-2.5 ${
-        border ? "border-t border-app-border" : ""
-      }`}
-    >
-      <span className="shrink-0 text-sm text-foreground/70">{label}</span>
-      <div className="min-w-0 flex-1 text-right">{children}</div>
-    </div>
   );
 }
 
@@ -356,15 +338,17 @@ function CategoryRow({
   }
 
   return (
-    <div ref={ref} className="relative bg-app-surface">
+    <div ref={ref} className="relative min-w-0 flex-1">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-4 px-3 py-2.5 text-left"
+        className="flex w-full flex-col gap-0.5 px-3 py-2 text-left"
       >
-        <span className="shrink-0 text-sm text-foreground/70">Category</span>
-        <span className="flex items-center gap-1.5 text-sm">
-          <span className={value ? "" : "text-foreground/40"}>
+        <span className="text-[10px] uppercase tracking-wide text-foreground/40">
+          Category
+        </span>
+        <span className="flex items-center justify-between gap-1 text-sm">
+          <span className={`truncate ${value ? "" : "text-foreground/40"}`}>
             {value || UNCATEGORISED}
           </span>
           <span className="font-mono text-foreground/40">{open ? "▴" : "▾"}</span>
@@ -372,7 +356,7 @@ function CategoryRow({
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-20 border border-foreground/15 bg-app-surface">
+        <div className="absolute left-0 top-full z-20 w-72 max-w-[calc(100vw-2.5rem)] border border-foreground/15 bg-app-surface">
           <div className="flex gap-2 border-b border-app-border p-3">
             {adding ? (
               <form onSubmit={addNew} className="flex flex-1 items-center gap-2">

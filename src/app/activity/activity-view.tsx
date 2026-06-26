@@ -8,8 +8,9 @@ import { Bar } from "../bar";
 
 // Activity = a pinned summary over a scrolling transaction log. The summary and
 // the log both read from the same filtered set, so the ASCII bars at the top
-// always describe exactly what's listed below. The summary collapses to a
-// single line once you scroll into the log.
+// always describe exactly what's listed below. The summary can be collapsed
+// (chevron, next to the hamburger) down to a condensed line — in / out plus the
+// filter bar — to give the log more room.
 //
 // Filters are three dropdown buttons: category tags, a month picker, and an
 // all / in / out type switch.
@@ -69,6 +70,7 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
   // The date menu commits only on OK, so its selection is staged here while open.
   const [draftDate, setDraftDate] = useState<DateFilter>({ kind: "1mo" });
   const [menu, setMenu] = useState<Menu>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   // "now" is anchored to the latest entry so the relative presets stay
   // meaningful for the mock data regardless of the wall clock.
@@ -160,29 +162,39 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
           <div className="px-5 pt-7 pb-4">
             <div className="flex items-center justify-between">
               <h1 className="text-sm font-medium">Activity</h1>
-              <button
-                type="button"
-                aria-label="Customise view"
-                className="flex flex-col items-center justify-center gap-[3px] p-1 text-foreground/45"
-              >
-                <span className="block h-px w-4 bg-current" />
-                <span className="block h-px w-4 bg-current" />
-                <span className="block h-px w-4 bg-current" />
-              </button>
+              <div className="flex items-center gap-1">
+                <CollapseToggle
+                  collapsed={collapsed}
+                  onClick={() => setCollapsed((c) => !c)}
+                />
+                <button
+                  type="button"
+                  aria-label="Customise view"
+                  className="flex h-7 w-7 flex-col items-center justify-center gap-[3px] bg-app-raised text-foreground/45"
+                >
+                  <span className="block h-px w-4 bg-current" />
+                  <span className="block h-px w-4 bg-current" />
+                  <span className="block h-px w-4 bg-current" />
+                </button>
+              </div>
             </div>
             <div className="mt-0.5 text-xs text-foreground/40">{dateLabel}</div>
 
-            <div className={`mt-3 font-mono text-3xl tabular-nums tracking-tight ${summary.net >= 0 ? "text-money-in" : "text-money-out"}`}>
-              {signed(summary.net)}
-            </div>
-            <div className="mt-0.5 text-xs text-foreground/45">net</div>
+            {!collapsed && (
+              <>
+                <div className={`mt-3 font-mono text-3xl tabular-nums tracking-tight ${summary.net >= 0 ? "text-money-in" : "text-money-out"}`}>
+                  {signed(summary.net)}
+                </div>
+                <div className="mt-0.5 text-xs text-foreground/45">net</div>
+              </>
+            )}
 
             <div className="mt-4 space-y-1">
               <SplitRow label="in" value={summary.income} ratio={summary.income / peak} />
               <SplitRow label="out" value={summary.expense} ratio={summary.expense / peak} />
             </div>
 
-            {breakdown.length > 0 && (
+            {!collapsed && breakdown.length > 0 && (
               <div className="mt-4">
                 <div className="text-xs text-foreground/45">Top spending</div>
                 <div className="mt-2 space-y-2">
@@ -369,6 +381,43 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
   );
 }
 
+// Collapse the summary to its condensed form. Chevron points up to collapse,
+// down to re-expand — matching the dropdown chevrons elsewhere in this view.
+function CollapseToggle({
+  collapsed,
+  onClick,
+}: {
+  collapsed: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={collapsed ? "Expand summary" : "Collapse summary"}
+      aria-expanded={!collapsed}
+      className="flex h-7 w-7 items-center justify-center bg-app-raised text-foreground/45"
+    >
+      <svg
+        width="11"
+        height="11"
+        viewBox="0 0 10 10"
+        fill="none"
+        aria-hidden="true"
+        className={`transition-transform ${collapsed ? "" : "rotate-180"}`}
+      >
+        <path
+          d="M2 4l3 3 3-3"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
 function SplitRow({
   label,
   value,
@@ -549,7 +598,7 @@ function CategoryMenu({
 
       {pendingDelete && (
         <div className="mt-2.5 flex items-center justify-between rounded border border-app-border bg-app-surface px-3 py-2">
-          <span className="text-xs text-foreground/70">Remove <span className="font-medium text-foreground">"{pendingDelete}"</span>?</span>
+          <span className="text-xs text-foreground/70">Remove <span className="font-medium text-foreground">&ldquo;{pendingDelete}&rdquo;</span>?</span>
           <div className="flex gap-3">
             <button
               type="button"

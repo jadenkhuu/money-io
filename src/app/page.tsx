@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { CoinAscii } from "./coin-ascii";
 import { HomeHeader } from "./home-header";
-import { entryLabel, getMonthSummary, getRecentTransactions, getTopCategories, getUser } from "@/lib/data";
+import { entryLabel, getMonthSummary, getRecentTransactions, getTopCategories } from "@/lib/data";
 import { amount, signed } from "@/lib/format";
 import { Bar } from "./bar";
 
@@ -9,7 +9,6 @@ import { Bar } from "./bar";
 // align. Words (titles, descriptions) stay in the sans / clean register.
 
 export default async function Home() {
-  const user = await getUser();
   const month = await getMonthSummary();
   const recent = await getRecentTransactions(3);
   const categories = await getTopCategories(3);
@@ -18,7 +17,7 @@ export default async function Home() {
   return (
     <main className="px-5 py-6">
       <h1 className="text-sm font-medium tracking-tight">money-io</h1>
-      <p className="mt-1 text-xs text-foreground/50">Welcome back, {user.name}</p>
+      <p className="mt-1 text-xs text-foreground/50">Welcome back</p>
 
       <div className="mt-6 flex justify-center">
         <CoinAscii />

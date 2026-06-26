@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { CoinAscii } from "./coin-ascii";
+import { login, signup } from "./actions/auth";
 
 // Shared shell for the two auth screens. `login` and `signup` differ only by the
 // confirm-password field and the copy, so they share one form to stay in sync.
@@ -30,6 +31,10 @@ const COPY = {
 export function AuthForm({ mode }: { mode: Mode }) {
   const copy = COPY[mode];
   const [show, setShow] = useState(false);
+  const [state, formAction, pending] = useActionState(
+    mode === "login" ? login : signup,
+    undefined
+  );
 
   return (
     <main className="flex h-full flex-col px-6 pt-6">
@@ -42,10 +47,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       <div className="mx-auto mt-4 w-full max-w-[20rem]">
         <h2 className="text-lg font-medium tracking-tight">{copy.heading}</h2>
 
-        <form
-          className="mt-6 space-y-4"
-          onSubmit={(e) => e.preventDefault()}
-        >
+        <form className="mt-6 space-y-4" action={formAction}>
           <Field
             id="email"
             label="Email"
@@ -81,11 +83,19 @@ export function AuthForm({ mode }: { mode: Mode }) {
             />
           )}
 
+          {state?.error && (
+            <p className="text-xs text-money-out">{state.error}</p>
+          )}
+          {state?.message && (
+            <p className="text-xs text-money-in">{state.message}</p>
+          )}
+
           <button
             type="submit"
-            className="mt-2 w-full bg-foreground py-2.5 text-sm font-medium text-app-surface transition-opacity hover:opacity-90"
+            disabled={pending}
+            className="mt-2 w-full bg-foreground py-2.5 text-sm font-medium text-app-surface transition-opacity hover:opacity-90 disabled:opacity-40"
           >
-            {copy.action}
+            {pending ? "…" : copy.action}
           </button>
         </form>
 
