@@ -21,15 +21,20 @@ body {
   height: 100%;
 }
 
-/* Centered app column. Fluid: 30vw is the governing term, so the column
-   scales smoothly as you resize the browser window (it tracks the real
-   viewport, not the monitor's nominal resolution). The min/max are only
-   far-apart guardrails — a floor so it never gets uselessly narrow, and a
-   cap so it keeps a mobile-column feel on very wide screens. min(100%, …)
-   keeps it from overflowing on phones.
+/* Centered app column. On mobile (≤ 499px) it fills 100% of the viewport —
+   no grey side bleed. Above that, 30vw is the governing term so the column
+   scales smoothly with the browser window. The min/max are far-apart
+   guardrails only — floor to prevent a uselessly narrow column, cap so it
+   stays a mobile-column feel on very wide screens.
      fluid range: ~1267px → ~2400px window width (380px → 720px column). */
 .app-column {
   width: min(100%, clamp(380px, 30vw, 720px));
+}
+
+@media (max-width: 499px) {
+  .app-column {
+    width: 100%;
+  }
 }
 
 body {
