@@ -42,7 +42,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-dvh bg-app-bg flex justify-center">
-        <div className="@container w-full max-w-[460px] min-h-dvh bg-app-surface">
+        <div className="app-column @container min-h-dvh bg-app-surface">
           {children}
         </div>
         <ServiceWorkerRegister />
