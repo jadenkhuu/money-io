@@ -38,14 +38,16 @@ export function AppNav() {
       >
         <TabLink {...TABS[0]} active={isActive(pathname, TABS[0].href)} />
         <TabLink {...TABS[1]} active={isActive(pathname, TABS[1].href)} />
-        <button
-          type="button"
-          onClick={() => setEntryOpen(true)}
-          aria-label="New entry"
-          className="flex h-14 items-center justify-center text-foreground"
-        >
-          <span className="text-2xl leading-none">+</span>
-        </button>
+        <div className="flex h-14 items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setEntryOpen(true)}
+            aria-label="New entry"
+            className="flex h-10 w-10 items-center justify-center bg-foreground/10 text-foreground active:bg-foreground/20"
+          >
+            <span className="text-2xl leading-none">+</span>
+          </button>
+        </div>
         <TabLink {...TABS[2]} active={isActive(pathname, TABS[2].href)} />
         <TabLink {...TABS[3]} active={isActive(pathname, TABS[3].href)} />
       </nav>
