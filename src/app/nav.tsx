@@ -20,9 +20,14 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
+// Routes that own the full screen — no app chrome (e.g. auth, before sign-in).
+const CHROMELESS = ["/login", "/signup"];
+
 export function AppNav() {
   const pathname = usePathname();
   const [entryOpen, setEntryOpen] = useState(false);
+
+  if (CHROMELESS.some((route) => pathname.startsWith(route))) return null;
 
   return (
     <>
