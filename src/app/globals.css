@@ -3,15 +3,21 @@
 :root {
   --app-bg: #2e2e2e;
   --app-surface: #ffffff;
+  --app-raised: #f4f4f4; /* slightly raised surface — dropdowns, popovers */
   --foreground: #171717;
   --app-border: #e5e5e5; /* hairline grey for separating surfaces */
+  --money-in: #1e6b45; /* inflow / positive amounts */
+  --money-out: #b52b27; /* outflow / negative amounts */
 }
 
 @theme inline {
   --color-app-bg: var(--app-bg);
   --color-app-surface: var(--app-surface);
+  --color-app-raised: var(--app-raised);
   --color-foreground: var(--foreground);
   --color-app-border: var(--app-border);
+  --color-money-in: var(--money-in);
+  --color-money-out: var(--money-out);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

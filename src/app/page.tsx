@@ -26,7 +26,7 @@ export default async function Home() {
 
       <div className="-mx-5 mt-3 divide-y divide-app-border">
         <Widget title="This month">
-          <div className="font-mono text-3xl tabular-nums tracking-tight">
+          <div className={`font-mono text-3xl tabular-nums tracking-tight ${month.net >= 0 ? "text-money-in" : "text-money-out"}`}>
             {signed(month.net)}
           </div>
           <div className="mt-3 font-mono text-sm text-foreground/70">
@@ -67,7 +67,7 @@ export default async function Home() {
                 className="flex items-baseline justify-between gap-4"
               >
                 <span className="text-sm">{t.description}</span>
-                <span className="font-mono text-sm tabular-nums text-foreground/80">
+                <span className={`font-mono text-sm tabular-nums ${t.amount >= 0 ? "text-money-in" : "text-money-out"}`}>
                   {signed(t.amount)}
                 </span>
               </li>

@@ -16,6 +16,13 @@ import { amount, bar, signed } from "@/lib/format";
 type TypeFilter = "all" | "in" | "out";
 type Menu = "cat" | "month" | "type" | null;
 
+// Date filter: relative presets, all-time, or a specific calendar month.
+type DateFilter =
+  | { kind: "week" }
+  | { kind: "3mo" }
+  | { kind: "all" }
+  | { kind: "month"; key: string };
+
 const TYPES: { key: TypeFilter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "in", label: "In" },
@@ -27,6 +34,19 @@ function monthLabel(key: string): string {
     month: "long",
     year: "numeric",
   });
+}
+
+function dateFilterLabel(df: DateFilter): string {
+  switch (df.kind) {
+    case "week":
+      return "Past week";
+    case "3mo":
+      return "Past 3 months";
+    case "all":
+      return "All time";
+    case "month":
+      return monthLabel(df.key);
+  }
 }
 
 function dayLabel(iso: string): string {
@@ -41,23 +61,39 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
   const [type, setType] = useState<TypeFilter>("all");
   const [cats, setCats] = useState<Set<string>>(new Set());
   const [extraCats, setExtraCats] = useState<string[]>([]);
-  const [monthKey, setMonthKey] = useState<string>(() =>
-    transactions.reduce((m, t) => (t.date.slice(0, 7) > m ? t.date.slice(0, 7) : m), "")
-  );
+  const [dateFilter, setDateFilter] = useState<DateFilter>({ kind: "3mo" });
+  // The date menu commits only on OK, so its selection is staged here while open.
+  const [draftDate, setDraftDate] = useState<DateFilter>({ kind: "3mo" });
   const [menu, setMenu] = useState<Menu>(null);
   const [collapsed, setCollapsed] = useState(false);
 
   const allCats = useMemo(() => [...CATEGORIES, ...extraCats], [extraCats]);
 
+  // "now" is anchored to the latest entry so the relative presets stay
+  // meaningful for the mock data regardless of the wall clock.
+  const now = useMemo(() => {
+    const latest = transactions.reduce((m, t) => (t.date > m ? t.date : m), "");
+    return latest ? new Date(latest) : new Date();
+  }, [transactions]);
+
   const filtered = useMemo(() => {
+    let from: Date | null = null;
+    if (dateFilter.kind === "week") {
+      from = new Date(now);
+      from.setDate(from.getDate() - 7);
+    } else if (dateFilter.kind === "3mo") {
+      from = new Date(now);
+      from.setMonth(from.getMonth() - 3);
+    }
     return transactions.filter((t) => {
-      if (monthKey !== "all" && !t.date.startsWith(monthKey)) return false;
+      if (dateFilter.kind === "month" && !t.date.startsWith(dateFilter.key)) return false;
+      if (from && new Date(t.date) < from) return false;
       if (type === "in" && t.amount < 0) return false;
       if (type === "out" && t.amount >= 0) return false;
       if (cats.size > 0 && !cats.has(t.category)) return false;
       return true;
     });
-  }, [transactions, monthKey, type, cats]);
+  }, [transactions, dateFilter, type, cats, now]);
 
   const summary = useMemo(() => summarize(filtered), [filtered]);
   const breakdown = useMemo(() => spendingByCategory(filtered), [filtered]);
@@ -104,7 +140,7 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
     setCollapsed((prev) => (prev ? y > 16 : y > 56));
   }
 
-  const dateLabel = monthKey === "all" ? "All time" : monthLabel(monthKey);
+  const dateLabel = dateFilterLabel(dateFilter);
   const catButtonLabel = cats.size === 0 ? "Categories" : `Categories · ${cats.size}`;
   const typeLabel = TYPES.find((t) => t.key === type)!.label;
 
@@ -116,7 +152,8 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
           <div className="flex items-baseline justify-between px-5 py-3">
             <span className="text-sm font-medium">Activity</span>
             <span className="font-mono text-sm tabular-nums">
-              <span className="text-foreground/45">net</span> {signed(summary.net)}
+              <span className="text-foreground/45">net</span>{" "}
+              <span className={summary.net >= 0 ? "text-money-in" : "text-money-out"}>{signed(summary.net)}</span>
               <span className="ml-3 text-foreground/45">out</span> {amount(summary.expense)}
             </span>
           </div>
@@ -129,7 +166,7 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
               </span>
             </div>
 
-            <div className="mt-3 font-mono text-3xl tabular-nums tracking-tight">
+            <div className={`mt-3 font-mono text-3xl tabular-nums tracking-tight ${summary.net >= 0 ? "text-money-in" : "text-money-out"}`}>
               {signed(summary.net)}
             </div>
             <div className="mt-0.5 text-xs text-foreground/45">{dateLabel} · net</div>
@@ -171,9 +208,16 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
             />
             <MenuButton
               label={dateLabel}
-              active={monthKey !== "all"}
+              active={dateFilter.kind !== "all"}
               open={menu === "month"}
-              onClick={() => setMenu((m) => (m === "month" ? null : "month"))}
+              onClick={() => {
+                if (menu === "month") {
+                  setMenu(null);
+                } else {
+                  setDraftDate(dateFilter);
+                  setMenu("month");
+                }
+              }}
             />
             <MenuButton
               label={typeLabel}
@@ -195,13 +239,46 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
           )}
           {menu === "month" && (
             <Dropdown>
-              <MonthPicker
-                value={monthKey}
-                onPick={(key) => {
-                  setMonthKey(key);
-                  setMenu(null);
-                }}
+              <OptionRow
+                label="Past week"
+                selected={draftDate.kind === "week"}
+                onClick={() => setDraftDate({ kind: "week" })}
               />
+              <OptionRow
+                label="Past 3 months"
+                selected={draftDate.kind === "3mo"}
+                onClick={() => setDraftDate({ kind: "3mo" })}
+              />
+              <OptionRow
+                label="All time"
+                selected={draftDate.kind === "all"}
+                onClick={() => setDraftDate({ kind: "all" })}
+              />
+              <div className="border-t border-app-border">
+                <MonthPicker
+                  value={draftDate.kind === "month" ? draftDate.key : ""}
+                  onPick={(key) => setDraftDate({ kind: "month", key })}
+                />
+              </div>
+              <div className="flex divide-x divide-app-border border-t border-app-border">
+                <button
+                  type="button"
+                  onClick={() => setMenu(null)}
+                  className="flex-1 py-2.5 text-sm text-foreground/55"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDateFilter(draftDate);
+                    setMenu(null);
+                  }}
+                  className="flex-1 py-2.5 text-sm font-medium text-foreground"
+                >
+                  OK
+                </button>
+              </div>
             </Dropdown>
           )}
           {menu === "type" && (
@@ -257,7 +334,7 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
                       </div>
                       <span
                         className={`shrink-0 font-mono text-sm tabular-nums ${
-                          t.amount >= 0 ? "text-foreground" : "text-foreground/70"
+                          t.amount >= 0 ? "text-money-in" : "text-money-out"
                         }`}
                       >
                         {signed(t.amount)}
@@ -338,7 +415,7 @@ function MenuButton({
 
 function Dropdown({ children }: { children: React.ReactNode }) {
   return (
-    <div className="absolute left-0 right-0 top-full z-40 border-b border-app-border bg-app-surface">
+    <div className="absolute left-0 right-0 top-full z-40 border-b border-app-border bg-app-raised">
       {children}
     </div>
   );
@@ -456,9 +533,10 @@ function MonthPicker({
   value: string;
   onPick: (key: string) => void;
 }) {
-  const [year, setYear] = useState(() =>
-    value !== "all" ? Number(value.slice(0, 4)) : new Date().getFullYear()
-  );
+  const [year, setYear] = useState(() => {
+    const parsed = Number(value.slice(0, 4));
+    return parsed >= 1970 ? parsed : new Date().getFullYear();
+  });
 
   return (
     <div className="p-3">
@@ -488,16 +566,6 @@ function MonthPicker({
           );
         })}
       </div>
-
-      <button
-        type="button"
-        onClick={() => onPick("all")}
-        className={`mt-2 w-full border-t border-app-border pt-2 text-left text-sm ${
-          value === "all" ? "text-foreground" : "text-foreground/55"
-        }`}
-      >
-        All time
-      </button>
     </div>
   );
 }
