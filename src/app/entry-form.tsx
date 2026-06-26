@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES, createTransaction } from "@/lib/data";
+import { CATEGORIES } from "@/lib/data";
+import { createTransaction } from "./actions/transactions";
 import { amount as fmt } from "@/lib/format";
 
 // The `+` entry sheet. Slides up over the current tab; the tab stays mounted

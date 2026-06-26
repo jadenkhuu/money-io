@@ -1,4 +1,4 @@
-import { getTransactions } from "@/lib/data";
+import { getTransactions } from "@/lib/transactions";
 import { ActivityView } from "./activity-view";
 
 export default async function ActivityPage() {

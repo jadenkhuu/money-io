@@ -1,7 +1,8 @@
-// Mock data layer. Functions are async so this interface matches a future
-// Supabase-backed implementation — swapping the internals later won't touch any
-// UI. Nothing here connects to a bank or any external account: entries are
-// manual-input only.
+// Shared data types and pure helpers. This module is import-safe from both
+// Server and Client Components — it holds no data access. Reads live in
+// `src/lib/transactions.ts` (server) and the write in
+// `src/app/actions/transactions.ts` (Server Action). Nothing here connects to a
+// bank or external account: entries are manual-input only.
 
 // A split records money others owe you for a shared payment. `amount` on the
 // transaction is always YOUR real share (what actually left your pocket), so
@@ -32,7 +33,16 @@ export type MonthSummary = {
 
 export type Category = { name: string; amount: number };
 
-export type User = { name: string };
+// What the entry form submits. Direction (income vs expense) and any split are
+// already resolved into a signed `amount` + optional `split` before this point.
+export type NewEntry = {
+  amount: number; // signed: your real share
+  title?: string;
+  note?: string;
+  category?: string; // omit / "" for uncategorised
+  date?: string; // yyyy-mm-dd, defaults to today
+  split?: Split;
+};
 
 // Spending categories. "Income" is the bucket for positive entries; the
 // spending breakdown ignores it.
@@ -52,62 +62,6 @@ export const CATEGORIES = [
 export function entryLabel(t: Transaction): string {
   return t.title || t.category || "Untitled";
 }
-
-// Mock rows predate split tracking; synthesize a createdAt at midday of the
-// attribution date so ordering is stable.
-function seed(
-  id: string,
-  title: string,
-  amount: number,
-  date: string,
-  category: string
-): Transaction {
-  return {
-    id,
-    title,
-    amount,
-    date,
-    category,
-    note: "",
-    createdAt: `${date}T12:00:00.000Z`,
-  };
-}
-
-// Most-recent first. ~3 months of manual entries so date/category filters on
-// the Activity screen have something to chew on.
-const TRANSACTIONS: Transaction[] = [
-  seed("t01", "Freelance", 340, "2026-06-25", "Income"),
-  seed("t02", "Lunch", -18, "2026-06-24", "Food"),
-  seed("t03", "Groceries", -54, "2026-06-23", "Food"),
-  seed("t04", "Coffee", -6, "2026-06-23", "Food"),
-  seed("t05", "Transport", -42, "2026-06-20", "Transport"),
-  seed("t06", "Pharmacy", -23, "2026-06-18", "Health"),
-  seed("t07", "Cinema", -16, "2026-06-16", "Entertainment"),
-  seed("t08", "Salary", 900, "2026-06-15", "Income"),
-  seed("t09", "Internet", -45, "2026-06-12", "Utilities"),
-  seed("t10", "Shoes", -68, "2026-06-10", "Shopping"),
-  seed("t11", "Groceries", -61, "2026-06-08", "Food"),
-  seed("t12", "Electricity", -52, "2026-06-05", "Utilities"),
-  seed("t13", "Rent", -700, "2026-06-01", "Housing"),
-
-  seed("t14", "Freelance", 220, "2026-05-28", "Income"),
-  seed("t15", "Dinner", -38, "2026-05-26", "Food"),
-  seed("t16", "Transport", -42, "2026-05-22", "Transport"),
-  seed("t17", "Gym", -30, "2026-05-20", "Health"),
-  seed("t18", "Salary", 900, "2026-05-15", "Income"),
-  seed("t19", "Internet", -45, "2026-05-12", "Utilities"),
-  seed("t20", "Books", -27, "2026-05-12", "Shopping"),
-  seed("t21", "Groceries", -58, "2026-05-09", "Food"),
-  seed("t22", "Concert", -55, "2026-05-07", "Entertainment"),
-  seed("t23", "Rent", -700, "2026-05-01", "Housing"),
-
-  seed("t24", "Salary", 900, "2026-04-15", "Income"),
-  seed("t25", "Groceries", -49, "2026-04-20", "Food"),
-  seed("t26", "Transport", -42, "2026-04-18", "Transport"),
-  seed("t27", "Dentist", -85, "2026-04-10", "Health"),
-  seed("t28", "Jacket", -120, "2026-04-05", "Shopping"),
-  seed("t29", "Rent", -700, "2026-04-01", "Housing"),
-];
 
 // --- Pure aggregation helpers (run anywhere, incl. client-side over a filtered
 // set so the Activity summary tracks the active filters live). ---
@@ -135,65 +89,7 @@ export function spendingByCategory(txns: Transaction[]): Category[] {
     .sort((a, b) => b.amount - a.amount);
 }
 
-// Latest calendar month present in the data ("yyyy-mm"). The mock's "now".
-function latestMonth(): string {
-  return TRANSACTIONS.reduce(
-    (m, t) => (t.date.slice(0, 7) > m ? t.date.slice(0, 7) : m),
-    "0000-00"
-  );
-}
-
-// --- Async data accessors (the Supabase swap point). ---
-
-export async function getTransactions(): Promise<Transaction[]> {
-  return TRANSACTIONS;
-}
-
-export async function getMonthSummary(): Promise<MonthSummary> {
-  const month = latestMonth();
-  return summarize(TRANSACTIONS.filter((t) => t.date.startsWith(month)));
-}
-
-export async function getRecentTransactions(limit = 3): Promise<Transaction[]> {
-  return TRANSACTIONS.slice(0, limit);
-}
-
-export async function getTopCategories(limit = 3): Promise<Category[]> {
-  const month = latestMonth();
-  return spendingByCategory(
-    TRANSACTIONS.filter((t) => t.date.startsWith(month))
-  ).slice(0, limit);
-}
-
-export async function getUser(): Promise<User> {
-  return { name: "Jaden" };
-}
-
-// What the entry form submits. Direction (income vs expense) and any split are
-// already resolved into a signed `amount` + optional `split` before this point.
-export type NewEntry = {
-  amount: number; // signed: your real share
-  title?: string;
-  note?: string;
-  category?: string; // omit / "" for uncategorised
-  date?: string; // yyyy-mm-dd, defaults to today
-  split?: Split;
-};
-
-// Write path — the Supabase insert swaps in here. Prepends so the new row shows
-// at the top of recent/activity lists immediately on refresh.
-export async function createTransaction(input: NewEntry): Promise<Transaction> {
-  const now = new Date();
-  const txn: Transaction = {
-    id: `t${now.getTime()}`,
-    amount: input.amount,
-    title: input.title?.trim() || "",
-    note: input.note?.trim() || "",
-    category: input.category?.trim() || "",
-    date: input.date || now.toISOString().slice(0, 10),
-    createdAt: now.toISOString(),
-    ...(input.split ? { split: input.split } : {}),
-  };
-  TRANSACTIONS.unshift(txn);
-  return txn;
+// Current calendar month as "yyyy-mm". Used to scope the home "This month" view.
+export function currentMonth(): string {
+  return new Date().toISOString().slice(0, 7);
 }

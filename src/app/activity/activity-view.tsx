@@ -351,25 +351,7 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
                 </div>
                 <ul>
                   {items.map((t) => (
-                    <li
-                      key={t.id}
-                      className="flex items-baseline justify-between gap-4 bg-[#f0f0f0] px-5 py-3"
-                    >
-                      <div className="min-w-0">
-                        <div className="truncate text-sm">{entryLabel(t)}</div>
-                        <div className="text-xs text-foreground/40">
-                          {t.category || "Uncategorised"}
-                          {t.split ? ` · ${amount(t.split.owed)} owed back` : ""}
-                        </div>
-                      </div>
-                      <span
-                        className={`shrink-0 font-mono text-sm tabular-nums ${
-                          t.amount >= 0 ? "text-money-in" : "text-money-out"
-                        }`}
-                      >
-                        {signed(t.amount)}
-                      </span>
-                    </li>
+                    <TransactionRow key={t.id} t={t} />
                   ))}
                 </ul>
               </section>
@@ -415,6 +397,73 @@ function CollapseToggle({
         />
       </svg>
     </button>
+  );
+}
+
+// A transaction in the log. Carries an unobtrusive "note" toggle that only
+// appears when the entry has a note, revealing it inline. The row itself stays
+// un-tappable so it's free for the future detail/edit sheet (see screens.md).
+function TransactionRow({ t }: { t: Transaction }) {
+  const [open, setOpen] = useState(false);
+  const hasNote = t.note.trim().length > 0;
+
+  return (
+    <li className="bg-[#f0f0f0] px-5 py-3">
+      <div className="flex items-baseline justify-between gap-4">
+        <div className="min-w-0">
+          <div className="truncate text-sm">{entryLabel(t)}</div>
+          <div className="flex items-center gap-2 text-xs text-foreground/40">
+            <span className="truncate">
+              {t.category || "Uncategorised"}
+              {t.split ? ` · ${amount(t.split.owed)} owed back` : ""}
+            </span>
+            {hasNote && (
+              <button
+                type="button"
+                onClick={() => setOpen((o) => !o)}
+                aria-expanded={open}
+                aria-label={open ? "Hide note" : "Show note"}
+                className={`flex shrink-0 items-center gap-0.5 ${
+                  open
+                    ? "text-foreground/70"
+                    : "text-foreground/45 hover:text-foreground/70"
+                }`}
+              >
+                note
+                <svg
+                  width="8"
+                  height="8"
+                  viewBox="0 0 10 10"
+                  fill="none"
+                  aria-hidden="true"
+                  className={`transition-transform ${open ? "rotate-180" : ""}`}
+                >
+                  <path
+                    d="M2 4l3 3 3-3"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+        <span
+          className={`shrink-0 font-mono text-sm tabular-nums ${
+            t.amount >= 0 ? "text-money-in" : "text-money-out"
+          }`}
+        >
+          {signed(t.amount)}
+        </span>
+      </div>
+      {hasNote && open && (
+        <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-foreground/55">
+          {t.note}
+        </p>
+      )}
+    </li>
   );
 }
 

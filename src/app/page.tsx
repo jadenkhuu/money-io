@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { CoinAscii } from "./coin-ascii";
 import { HomeHeader } from "./home-header";
-import { entryLabel, getMonthSummary, getRecentTransactions, getTopCategories } from "@/lib/data";
+import { entryLabel } from "@/lib/data";
+import { getMonthSummary, getRecentTransactions, getTopCategories } from "@/lib/transactions";
 import { amount, signed } from "@/lib/format";
 import { Bar } from "./bar";
 
