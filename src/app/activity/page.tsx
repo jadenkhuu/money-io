@@ -1,7 +1,7 @@
-export default function ActivityPage() {
-  return (
-    <main className="px-5 py-6">
-      <h1 className="text-base font-medium">Activity</h1>
-    </main>
-  );
+import { getTransactions } from "@/lib/data";
+import { ActivityView } from "./activity-view";
+
+export default async function ActivityPage() {
+  const transactions = await getTransactions();
+  return <ActivityView transactions={transactions} />;
 }

@@ -2,22 +2,10 @@ import type { ReactNode } from "react";
 import { CoinAscii } from "./coin-ascii";
 import { HomeHeader } from "./home-header";
 import { getMonthSummary, getRecentTransactions, getTopCategories, getUser } from "@/lib/data";
+import { amount, bar, signed } from "@/lib/format";
 
 // Money is shown in the mono / ASCII register with tabular figures so columns
 // align. Words (titles, descriptions) stay in the sans / clean register.
-
-function amount(n: number) {
-  return Math.abs(n).toLocaleString("en-US");
-}
-
-function signed(n: number) {
-  return `${n < 0 ? "−" : "+"}${amount(n)}`;
-}
-
-function meter(ratio: number, width = 16) {
-  const filled = Math.round(Math.min(1, Math.max(0, ratio)) * width);
-  return "█".repeat(filled) + "░".repeat(width - filled);
-}
 
 export default async function Home() {
   const user = await getUser();
@@ -42,7 +30,7 @@ export default async function Home() {
             {signed(month.net)}
           </div>
           <div className="mt-3 font-mono text-sm text-foreground/70">
-            {meter(spendRatio)}
+            {bar(spendRatio)}
             <span className="ml-2 text-foreground/45">
               {Math.round(spendRatio * 100)}%
             </span>
@@ -64,7 +52,7 @@ export default async function Home() {
                   </span>
                 </div>
                 <div className="mt-1 font-mono text-xs text-foreground/40">
-                  {meter(c.amount / month.expense)}
+                  {bar(c.amount / month.expense)}
                 </div>
               </li>
             ))}
