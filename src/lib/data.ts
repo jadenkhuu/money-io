@@ -3,12 +3,25 @@
 // UI. Nothing here connects to a bank or any external account: entries are
 // manual-input only.
 
+// A split records money others owe you for a shared payment. `amount` on the
+// transaction is always YOUR real share (what actually left your pocket), so
+// every spending aggregation stays correct without knowing about splits. The
+// reimbursement lives here and is what the Owed ledger reads.
+export type Split = {
+  owed: number; // positive — amount expected back from others
+  from?: string; // optional person the money is owed by (links to Owed ledger)
+  settled?: boolean; // collected yet?
+};
+
 export type Transaction = {
   id: string;
-  description: string;
-  amount: number; // + income, − expense
-  date: string; // ISO yyyy-mm-dd
-  category: string;
+  amount: number; // signed: + income, − expense. For splits this is your share.
+  title: string; // optional label, "" when blank
+  note: string; // optional longer description, "" when blank
+  category: string; // "" = uncategorised
+  date: string; // ISO yyyy-mm-dd — the day the entry is attributed to
+  createdAt: string; // ISO timestamp — when the entry was logged
+  split?: Split; // present only when you paid for others
 };
 
 export type MonthSummary = {
@@ -34,40 +47,66 @@ export const CATEGORIES = [
   "Utilities",
 ] as const;
 
+// Label shown for an entry in lists. Title and note are both optional, so fall
+// back to the category, then a neutral placeholder.
+export function entryLabel(t: Transaction): string {
+  return t.title || t.category || "Untitled";
+}
+
+// Mock rows predate split tracking; synthesize a createdAt at midday of the
+// attribution date so ordering is stable.
+function seed(
+  id: string,
+  title: string,
+  amount: number,
+  date: string,
+  category: string
+): Transaction {
+  return {
+    id,
+    title,
+    amount,
+    date,
+    category,
+    note: "",
+    createdAt: `${date}T12:00:00.000Z`,
+  };
+}
+
 // Most-recent first. ~3 months of manual entries so date/category filters on
 // the Activity screen have something to chew on.
 const TRANSACTIONS: Transaction[] = [
-  { id: "t01", description: "Freelance", amount: 340, date: "2026-06-25", category: "Income" },
-  { id: "t02", description: "Lunch", amount: -18, date: "2026-06-24", category: "Food" },
-  { id: "t03", description: "Groceries", amount: -54, date: "2026-06-23", category: "Food" },
-  { id: "t04", description: "Coffee", amount: -6, date: "2026-06-23", category: "Food" },
-  { id: "t05", description: "Transport", amount: -42, date: "2026-06-20", category: "Transport" },
-  { id: "t06", description: "Pharmacy", amount: -23, date: "2026-06-18", category: "Health" },
-  { id: "t07", description: "Cinema", amount: -16, date: "2026-06-16", category: "Entertainment" },
-  { id: "t08", description: "Salary", amount: 900, date: "2026-06-15", category: "Income" },
-  { id: "t09", description: "Internet", amount: -45, date: "2026-06-12", category: "Utilities" },
-  { id: "t10", description: "Shoes", amount: -68, date: "2026-06-10", category: "Shopping" },
-  { id: "t11", description: "Groceries", amount: -61, date: "2026-06-08", category: "Food" },
-  { id: "t12", description: "Electricity", amount: -52, date: "2026-06-05", category: "Utilities" },
-  { id: "t13", description: "Rent", amount: -700, date: "2026-06-01", category: "Housing" },
+  seed("t01", "Freelance", 340, "2026-06-25", "Income"),
+  seed("t02", "Lunch", -18, "2026-06-24", "Food"),
+  seed("t03", "Groceries", -54, "2026-06-23", "Food"),
+  seed("t04", "Coffee", -6, "2026-06-23", "Food"),
+  seed("t05", "Transport", -42, "2026-06-20", "Transport"),
+  seed("t06", "Pharmacy", -23, "2026-06-18", "Health"),
+  seed("t07", "Cinema", -16, "2026-06-16", "Entertainment"),
+  seed("t08", "Salary", 900, "2026-06-15", "Income"),
+  seed("t09", "Internet", -45, "2026-06-12", "Utilities"),
+  seed("t10", "Shoes", -68, "2026-06-10", "Shopping"),
+  seed("t11", "Groceries", -61, "2026-06-08", "Food"),
+  seed("t12", "Electricity", -52, "2026-06-05", "Utilities"),
+  seed("t13", "Rent", -700, "2026-06-01", "Housing"),
 
-  { id: "t14", description: "Freelance", amount: 220, date: "2026-05-28", category: "Income" },
-  { id: "t15", description: "Dinner", amount: -38, date: "2026-05-26", category: "Food" },
-  { id: "t16", description: "Transport", amount: -42, date: "2026-05-22", category: "Transport" },
-  { id: "t17", description: "Gym", amount: -30, date: "2026-05-20", category: "Health" },
-  { id: "t18", description: "Salary", amount: 900, date: "2026-05-15", category: "Income" },
-  { id: "t19", description: "Internet", amount: -45, date: "2026-05-12", category: "Utilities" },
-  { id: "t20", description: "Books", amount: -27, date: "2026-05-12", category: "Shopping" },
-  { id: "t21", description: "Groceries", amount: -58, date: "2026-05-09", category: "Food" },
-  { id: "t22", description: "Concert", amount: -55, date: "2026-05-07", category: "Entertainment" },
-  { id: "t23", description: "Rent", amount: -700, date: "2026-05-01", category: "Housing" },
+  seed("t14", "Freelance", 220, "2026-05-28", "Income"),
+  seed("t15", "Dinner", -38, "2026-05-26", "Food"),
+  seed("t16", "Transport", -42, "2026-05-22", "Transport"),
+  seed("t17", "Gym", -30, "2026-05-20", "Health"),
+  seed("t18", "Salary", 900, "2026-05-15", "Income"),
+  seed("t19", "Internet", -45, "2026-05-12", "Utilities"),
+  seed("t20", "Books", -27, "2026-05-12", "Shopping"),
+  seed("t21", "Groceries", -58, "2026-05-09", "Food"),
+  seed("t22", "Concert", -55, "2026-05-07", "Entertainment"),
+  seed("t23", "Rent", -700, "2026-05-01", "Housing"),
 
-  { id: "t24", description: "Salary", amount: 900, date: "2026-04-15", category: "Income" },
-  { id: "t25", description: "Groceries", amount: -49, date: "2026-04-20", category: "Food" },
-  { id: "t26", description: "Transport", amount: -42, date: "2026-04-18", category: "Transport" },
-  { id: "t27", description: "Dentist", amount: -85, date: "2026-04-10", category: "Health" },
-  { id: "t28", description: "Jacket", amount: -120, date: "2026-04-05", category: "Shopping" },
-  { id: "t29", description: "Rent", amount: -700, date: "2026-04-01", category: "Housing" },
+  seed("t24", "Salary", 900, "2026-04-15", "Income"),
+  seed("t25", "Groceries", -49, "2026-04-20", "Food"),
+  seed("t26", "Transport", -42, "2026-04-18", "Transport"),
+  seed("t27", "Dentist", -85, "2026-04-10", "Health"),
+  seed("t28", "Jacket", -120, "2026-04-05", "Shopping"),
+  seed("t29", "Rent", -700, "2026-04-01", "Housing"),
 ];
 
 // --- Pure aggregation helpers (run anywhere, incl. client-side over a filtered
@@ -88,7 +127,8 @@ export function spendingByCategory(txns: Transaction[]): Category[] {
   const totals = new Map<string, number>();
   for (const t of txns) {
     if (t.amount >= 0) continue;
-    totals.set(t.category, (totals.get(t.category) ?? 0) + -t.amount);
+    const name = t.category || "Uncategorised";
+    totals.set(name, (totals.get(name) ?? 0) + -t.amount);
   }
   return [...totals]
     .map(([name, amount]) => ({ name, amount }))
@@ -127,4 +167,33 @@ export async function getTopCategories(limit = 3): Promise<Category[]> {
 
 export async function getUser(): Promise<User> {
   return { name: "Jaden" };
+}
+
+// What the entry form submits. Direction (income vs expense) and any split are
+// already resolved into a signed `amount` + optional `split` before this point.
+export type NewEntry = {
+  amount: number; // signed: your real share
+  title?: string;
+  note?: string;
+  category?: string; // omit / "" for uncategorised
+  date?: string; // yyyy-mm-dd, defaults to today
+  split?: Split;
+};
+
+// Write path — the Supabase insert swaps in here. Prepends so the new row shows
+// at the top of recent/activity lists immediately on refresh.
+export async function createTransaction(input: NewEntry): Promise<Transaction> {
+  const now = new Date();
+  const txn: Transaction = {
+    id: `t${now.getTime()}`,
+    amount: input.amount,
+    title: input.title?.trim() || "",
+    note: input.note?.trim() || "",
+    category: input.category?.trim() || "",
+    date: input.date || now.toISOString().slice(0, 10),
+    createdAt: now.toISOString(),
+    ...(input.split ? { split: input.split } : {}),
+  };
+  TRANSACTIONS.unshift(txn);
+  return txn;
 }

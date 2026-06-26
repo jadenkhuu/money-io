@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { EntrySheet } from "./entry-form";
 
 // Persistent bottom tab bar + the `+` entry sheet. Tabs are real routes so the
 // app stays navigable as an installed PWA (no browser back chrome to rely on).
@@ -75,44 +76,3 @@ function TabLink({
   );
 }
 
-function EntrySheet({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
-      <div className="app-column relative" onClick={(e) => e.stopPropagation()}>
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="New entry"
-          className="rounded-t-lg border-t border-foreground/10 bg-app-surface px-5 pt-4"
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-medium">New entry</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="flex h-8 w-8 items-center justify-center text-foreground/60"
-            >
-              <span className="text-lg leading-none">×</span>
-            </button>
-          </div>
-          <p className="mt-8 text-sm text-foreground/45">Entry form goes here.</p>
-        </div>
-      </div>
-    </div>
-  );
-}

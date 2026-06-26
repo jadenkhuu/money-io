@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Transaction } from "@/lib/data";
-import { CATEGORIES, spendingByCategory, summarize } from "@/lib/data";
+import { CATEGORIES, entryLabel, spendingByCategory, summarize } from "@/lib/data";
 import { amount, signed } from "@/lib/format";
 import { Bar } from "../bar";
 
@@ -344,8 +344,11 @@ export function ActivityView({ transactions }: { transactions: Transaction[] }) 
                       className="flex items-baseline justify-between gap-4 bg-[#f0f0f0] px-5 py-3"
                     >
                       <div className="min-w-0">
-                        <div className="truncate text-sm">{t.description}</div>
-                        <div className="text-xs text-foreground/40">{t.category}</div>
+                        <div className="truncate text-sm">{entryLabel(t)}</div>
+                        <div className="text-xs text-foreground/40">
+                          {t.category || "Uncategorised"}
+                          {t.split ? ` · ${amount(t.split.owed)} owed back` : ""}
+                        </div>
                       </div>
                       <span
                         className={`shrink-0 font-mono text-sm tabular-nums ${

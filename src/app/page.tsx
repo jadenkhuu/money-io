@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { CoinAscii } from "./coin-ascii";
 import { HomeHeader } from "./home-header";
-import { getMonthSummary, getRecentTransactions, getTopCategories, getUser } from "@/lib/data";
+import { entryLabel, getMonthSummary, getRecentTransactions, getTopCategories, getUser } from "@/lib/data";
 import { amount, signed } from "@/lib/format";
 import { Bar } from "./bar";
 
@@ -69,7 +69,7 @@ export default async function Home() {
                 key={t.id}
                 className="flex items-baseline justify-between gap-4"
               >
-                <span className="text-sm">{t.description}</span>
+                <span className="text-sm">{entryLabel(t)}</span>
                 <span className={`font-mono text-sm tabular-nums ${t.amount >= 0 ? "text-money-in" : "text-money-out"}`}>
                   {signed(t.amount)}
                 </span>
